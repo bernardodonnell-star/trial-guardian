@@ -1,98 +1,222 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link, Stack, router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { daysLeftLabel, formatDeadline, TrialCard } from '@/components/trial-card';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { setTrialStatus } from '@/lib/actions';
+import { describeTimeLeft } from '@/lib/dates';
+import {
+  deadlineOf,
+  formatMoney,
+  formatPrice,
+  keptSubscriptions,
+  overdueTrials,
+  subscriptionTotals,
+  upcomingTrials,
+  useTrials,
+  type Trial,
+} from '@/lib/trials';
+import { useNow } from '@/hooks/use-now';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function HomeScreen() {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const trials = useTrials();
+  const now = useNow();
+  const upcoming = upcomingTrials(trials, now);
+  const overdue = overdueTrials(trials, now);
+  const subscriptions = keptSubscriptions(trials, now);
+  const totals = subscriptionTotals(trials);
+  const history = trials
+    .filter((t) => t.status === 'cancelled')
+    .sort((a, b) => b.chargeDate.localeCompare(a.chargeDate));
+  const saved = savedByCancelling(history);
+  const [next, ...rest] = upcoming;
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Link href="/settings" asChild>
+              <Pressable accessibilityLabel="Settings" hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}>
+                <SymbolView name="gearshape" tintColor={theme.accent} size={22} fallback={<ThemedText style={{ color: theme.accent }}>Settings</ThemedText>} />
+              </Pressable>
+            </Link>
+          ),
+        }}
+      />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
+        {trials.length === 0 ? <EmptyState /> : null}
+
+        {overdue.length > 0 ? (
+          <View style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              DID YOU CANCEL?
+            </ThemedText>
+            {overdue.map((trial) => (
+              <OverdueCard key={trial.id} trial={trial} />
+            ))}
+          </View>
+        ) : null}
+
+        {next ? <NextUpCard trial={next} now={now} /> : null}
+
+        {rest.length > 0 ? (
+          <View style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              ALSO ENDING
+            </ThemedText>
+            {rest.map((trial) => (
+              <TrialCard key={trial.id} trial={trial} now={now} />
+            ))}
+          </View>
+        ) : null}
+
+        {subscriptions.length > 0 ? (
+          <View style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              SUBSCRIPTIONS
+            </ThemedText>
+            {totals.length > 0 ? (
+              <View style={[styles.totals, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                {totals.map((total) => (
+                  <View key={total.currency ?? 'none'} style={styles.totalRow}>
+                    <ThemedText style={styles.totalMonthly}>{`${formatMoney(total.monthly, total.currency)}/month`}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {`${formatMoney(total.yearly, total.currency)} a year`}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {subscriptions.map((trial) => (
+              <TrialCard key={trial.id} trial={trial} now={now} />
+            ))}
+          </View>
+        ) : null}
+
+        {history.length > 0 ? (
+          <View style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              {`CANCELLED IN TIME · ${history.length}${saved ? ` · ${saved} SAVED` : ''}`}
+            </ThemedText>
+            {history.map((trial) => (
+              <TrialCard key={trial.id} trial={trial} now={now} />
+            ))}
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.two, backgroundColor: theme.background }]}>
+        <Button title="Add a trial" onPress={() => router.push('/add')} />
+      </View>
+    </View>
   );
 }
 
-export default function HomeScreen() {
+/** What the first charges would have cost, in the most common currency (mixed currencies are not added up). */
+function savedByCancelling(cancelled: Trial[]): string | null {
+  const byCurrency = new Map<string | null, number>();
+  for (const t of cancelled) if (t.price !== null) byCurrency.set(t.currency, (byCurrency.get(t.currency) ?? 0) + t.price);
+  const [top] = [...byCurrency.entries()].sort((a, b) => b[1] - a[1]);
+  return top ? formatMoney(top[1], top[0]) : null;
+}
+
+function NextUpCard({ trial, now }: { trial: Trial; now: Date }) {
+  const theme = useTheme();
+  const price = formatPrice(trial);
+  const msLeft = deadlineOf(trial).getTime() - now.getTime();
+  const finalHours = msLeft < 24 * 60 * 60 * 1000 ? ` · ${describeTimeLeft(deadlineOf(trial), now)} to go` : '';
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
+    <Link href={`/trial/${trial.id}`} asChild>
+      <Pressable
+        style={({ pressed }) => [styles.hero, { backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
+        <ThemedText type="smallBold" style={styles.heroEyebrow}>
+          NEXT TO CANCEL
         </ThemedText>
+        <ThemedText style={styles.heroService} numberOfLines={1}>
+          {trial.service}
+        </ThemedText>
+        <ThemedText style={styles.heroCountdown}>{daysLeftLabel(trial, now)}</ThemedText>
+        <ThemedText type="small" style={styles.heroDetail}>
+          {`Cancel before ${formatDeadline(trial)}`}
+          {price ? ` · ${price} after` : ''}
+          {finalHours}
+        </ThemedText>
+      </Pressable>
+    </Link>
+  );
+}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+function OverdueCard({ trial }: { trial: Trial }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.overdue, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+      <ThemedText style={styles.overdueTitle}>{trial.service}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        The trial ended on {formatDeadline(trial)}. Did you cancel it?
+      </ThemedText>
+      <View style={styles.overdueButtons}>
+        <Button title="Yes, cancelled" variant="secondary" style={styles.flex} onPress={() => setTrialStatus(trial.id, 'cancelled')} />
+        <Button title="I kept it" variant="secondary" style={styles.flex} onPress={() => setTrialStatus(trial.id, 'kept')} />
+      </View>
+    </View>
+  );
+}
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+function EmptyState() {
+  const theme = useTheme();
+  return (
+    <View style={styles.empty}>
+      <View style={[styles.emptyIcon, { backgroundColor: theme.accentSoft }]}>
+        <SymbolView name="hourglass" tintColor={theme.accent} size={34} fallback={null} />
+      </View>
+      <ThemedText style={styles.emptyTitle}>Never pay for a forgotten trial</ThemedText>
+      <ThemedText themeColor="textSecondary" style={styles.emptyBody}>
+        When you start a free trial, share the sign-up email or a screenshot to Trial Guardian. It reads
+        the service, price and end date on your iPhone, then reminds you before you are charged.
+      </ThemedText>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.emptyBody}>
+        Nothing you share leaves your phone.
+      </ThemedText>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
+  screen: { flex: 1 },
+  flex: { flex: 1 },
+  content: {
+    padding: Spacing.three,
     gap: Spacing.four,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  group: { gap: Spacing.two },
+  groupTitle: { marginLeft: Spacing.one, fontSize: 12, letterSpacing: 0.5 },
+  hero: { borderRadius: 22, padding: Spacing.four, gap: Spacing.one },
+  heroEyebrow: { color: '#FFFFFFCC', fontSize: 12, letterSpacing: 0.8 },
+  heroService: { color: '#FFFFFF', fontSize: 28, lineHeight: 34, fontWeight: '700' },
+  heroCountdown: { color: '#FFFFFF', fontSize: 44, lineHeight: 52, fontWeight: '800', marginTop: Spacing.two },
+  heroDetail: { color: '#FFFFFFE6' },
+  overdue: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.two },
+  overdueTitle: { fontSize: 17, fontWeight: '600' },
+  totals: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.one },
+  totalRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two },
+  totalMonthly: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
+  overdueButtons: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
+  empty: { alignItems: 'center', gap: Spacing.three, paddingTop: Spacing.five, paddingHorizontal: Spacing.two },
+  emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { fontSize: 22, lineHeight: 28, fontWeight: '700', textAlign: 'center' },
+  emptyBody: { textAlign: 'center' },
+  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Spacing.three, paddingTop: Spacing.two },
 });
