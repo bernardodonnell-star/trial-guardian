@@ -1,0 +1,26 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "copyright": "2026 Bernard O'Donnell",
+    "categories": ["FINANCE", "PRODUCTIVITY"],
+    "info": {
+      "en-GB": {
+        "title": "Trial Guardian",
+        "subtitle": "Cancel free trials in time",
+        "promoText": "Share a sign-up email or screenshot and Trial Guardian reminds you before the first charge, with a Lock Screen countdown. No account, no inbox access, no subscription.",
+        "description": "Free trials are easy to start and easy to forget. Trial Guardian makes sure you decide before you pay.\n\nSHARE IT, DONE\nWhen you start a free trial, share the sign-up email or a screenshot of the offer to Trial Guardian. It reads the service, the price and the day you'll be charged, right on your iPhone. Check the details and tap save.\n\nREMINDERS THAT ARRIVE IN TIME\nGet a nudge a few days before, on the last day, and on the last evening. Pick the days and the time that suit you.\n\nA COUNTDOWN ON YOUR LOCK SCREEN\nIn the final hours a Live Activity counts down on your Lock Screen and in the Dynamic Island. Add the widget to your Home Screen or Lock Screen to always see the next trial to cancel.\n\nONE TAP TO CANCEL\nOpen the cancel link from the email, or jump straight to your App Store subscriptions.\n\nPRIVATE BY DESIGN\n- Everything is read on your iPhone. Nothing is uploaded.\n- No account and no sign-in.\n- No access to your email or bank.\n- Your trials are stored only on your device.\n\nPAY ONCE\nTrial Guardian is a one-time purchase. No subscription, which seems only fair for an app that helps you avoid them.",
+        "keywords": ["free trial", "reminder", "cancel", "subscription", "tracker", "renewal", "countdown", "bills", "save money"],
+        "privacyPolicyUrl": "TODO-privacy-policy-url",
+        "supportUrl": "TODO-support-url",
+        "releaseNotes": "First release."
+      }
+    },
+    "review": {
+      "firstName": "Bernard",
+      "lastName": "O'Donnell",
+      "email": "TODO-review-contact-email",
+      "phone": "TODO-review-phone",
+      "notes": "No account is needed. To test, open the app, tap Add a trial, choose Type it in, and save a trial with a charge date tomorrow. Reminders and the Lock Screen countdown use local notifications and Live Activities only. You can also share any free trial email text to the app from Mail or Notes."
+    }
+  }
+}

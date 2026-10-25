@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "trial-guardian",
+    "name": "Trial Guardian",
     "slug": "trial-guardian",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,11 +8,20 @@
     "scheme": "trialguardian",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.bernardodonnell.trialguardian",
+      "icon": "./assets/expo.icon",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Trial Guardian reads the screenshot you choose on your iPhone to find the trial's end date and price."
+      }
     },
     "android": {
+      "package": "com.bernardodonnell.trialguardian",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FDE9E2",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -20,7 +29,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -28,11 +37,64 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#F7F6F3",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 76,
+          "dark": {
+            "backgroundColor": "#0E0F10"
+          }
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsText": true,
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsImageWithMaxCount": 1
+          },
+          "androidIntentFilters": ["text/*", "image/*"]
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Trial Guardian reads the screenshot you choose on your iPhone to find the trial's end date and price.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "UpcomingTrials",
+              "displayName": "Trials ending",
+              "description": "See which free trial to cancel next.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ],
+                "initialLayout": "./src/widgets/upcoming-trials.tsx"
+              }
+            }
+          ]
+        }
+      ],
+      "expo-sqlite",
+      "expo-localization",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
