@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   TextInput,
   View,
   type TextInputProps,
@@ -54,6 +55,7 @@ export function TrialForm({ initial, source, banner, submitLabel, onSubmit }: Tr
   );
   const [cancelUrl, setCancelUrl] = useState(initial.cancelUrl ?? '');
   const [notes, setNotes] = useState(initial.notes ?? '');
+  const [appStore, setAppStore] = useState(initial.billedByAppStore ?? false);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,7 @@ export function TrialForm({ initial, source, banner, submitLabel, onSubmit }: Tr
         billingPeriod: period,
         chargeDate: toDateKey(chargeDate),
         cancelUrl: cancelUrl.trim() || null,
+        billedByAppStore: appStore,
         notes: notes.trim(),
         source,
       });
@@ -136,6 +139,10 @@ export function TrialForm({ initial, source, banner, submitLabel, onSubmit }: Tr
               </Pressable>
             )}
           </Field>
+          <Divider />
+          <Field label="App Store">
+            <Switch value={appStore} onValueChange={setAppStore} trackColor={{ true: theme.accent }} />
+          </Field>
         </Section>
         {showAndroidPicker ? (
           <DateTimePicker
@@ -149,7 +156,9 @@ export function TrialForm({ initial, source, banner, submitLabel, onSubmit }: Tr
           />
         ) : null}
         <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-          The day the first payment is taken. You&apos;ll be reminded before it starts.
+          {appStore
+            ? 'The day the first payment is taken. Apple needs cancelling 24 hours before, so you’ll be reminded a day earlier.'
+            : 'The day the first payment is taken. You’ll be reminded before it starts.'}
         </ThemedText>
 
         <Section title="Price after the trial">

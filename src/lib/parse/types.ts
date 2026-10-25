@@ -10,6 +10,8 @@ export type ParsedTrial = {
   /** The day the first charge happens (or the trial ends), as `YYYY-MM-DD`. */
   chargeDate: string | null;
   cancelUrl: string | null;
+  /** Billed through Apple, which needs cancelling more than 24 hours before renewal. */
+  billedByAppStore: boolean;
 };
 
 export type ParseOptions = {
@@ -28,4 +30,5 @@ export const emptyParsedTrial: ParsedTrial = {
   billingPeriod: null,
   chargeDate: null,
   cancelUrl: null,
+  billedByAppStore: false,
 };

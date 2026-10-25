@@ -17,7 +17,7 @@ No account, no inbox or bank access, no servers. Sold as a one-time purchase.
 | Lock Screen / Dynamic Island countdown | `expo-widgets` Live Activity, `src/widgets/trial-countdown.tsx` |
 | Home Screen and Lock Screen widget | `expo-widgets`, `src/widgets/upcoming-trials.tsx` |
 
-A trial's deadline is the start of its charge day. Default reminders: 9am three days before, 9am on the last day, and 6pm on the last evening. iOS limits a Live Activity to eight hours, so the countdown starts in the final eight hours when the app is opened (for example from the last-evening reminder). The widget covers the days before that.
+A trial's deadline is the start of its charge day, or a day earlier for trials billed through the App Store, because Apple renews unless you cancel more than 24 hours before. Default reminders: 9am three days before, 9am on the last day, and 6pm on the last evening. iOS limits a Live Activity to eight hours, so the countdown starts in the final eight hours when the app is opened (for example from the last-evening reminder). The widget covers the days before that.
 
 ## Develop
 

@@ -11,7 +11,7 @@ export type UpcomingTrialsProps = {
   trials: {
     id: string;
     service: string;
-    /** Start of the charge day, in milliseconds. */
+    /** The moment to cancel before (start of the charge day, a day earlier for App Store), in ms. */
     deadline: number;
     price: string | null;
   }[];
@@ -86,14 +86,14 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
   if (family === 'systemSmall') {
     return (
       <VStack alignment="leading" spacing={4} modifiers={[background, widgetURL(`trialguardian://trial/${next.id}`)]}>
-        <Text modifiers={[font({ textStyle: 'caption', weight: 'semibold' }), foregroundStyle(accent)]}>NEXT CHARGE</Text>
+        <Text modifiers={[font({ textStyle: 'caption', weight: 'semibold' }), foregroundStyle(accent)]}>NEXT TO CANCEL</Text>
         <Text modifiers={[font({ textStyle: 'title3', weight: 'bold' }), lineLimit(2)]}>{next.service}</Text>
         <Spacer />
         <Text modifiers={[font({ size: 28, weight: 'bold', design: 'rounded' }), lineLimit(1)]}>
           {lastDayLabel(next.deadline)}
         </Text>
         <Text modifiers={[font({ textStyle: 'caption' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
-          {next.price ? `${next.price} on ${shortDate(next.deadline)}` : `Charges ${shortDate(next.deadline)}`}
+          {`Cancel before ${shortDate(next.deadline)}`}
         </Text>
       </VStack>
     );
@@ -114,7 +114,7 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
           <VStack alignment="leading" spacing={0}>
             <Text modifiers={[font({ textStyle: 'subheadline', weight: 'semibold' }), lineLimit(1)]}>{trial.service}</Text>
             <Text modifiers={[font({ textStyle: 'caption2' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
-              {trial.price ? `${trial.price} on ${shortDate(trial.deadline)}` : shortDate(trial.deadline)}
+              {trial.price ? `${trial.price} · before ${shortDate(trial.deadline)}` : `Before ${shortDate(trial.deadline)}`}
             </Text>
           </VStack>
           <Spacer />

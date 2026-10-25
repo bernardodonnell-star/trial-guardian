@@ -1,7 +1,7 @@
 import Storage from 'expo-sqlite/kv-store';
 import { useSyncExternalStore } from 'react';
 
-import { fromDateKey } from '@/lib/dates';
+import { addDays, fromDateKey } from '@/lib/dates';
 import type { BillingPeriod } from '@/lib/parse/types';
 
 export type TrialStatus = 'active' | 'cancelled' | 'kept';
@@ -15,6 +15,8 @@ export type Trial = {
   /** `YYYY-MM-DD`: the day the first charge is taken. We remind before the start of this day. */
   chargeDate: string;
   cancelUrl: string | null;
+  /** Apple renews unless cancelled more than 24 hours before, so the deadline is a day earlier. */
+  billedByAppStore?: boolean;
   notes: string;
   status: TrialStatus;
   source: 'shared-text' | 'shared-image' | 'manual';
@@ -99,16 +101,25 @@ export function removeTrial(id: string) {
   commit(trials.filter((t) => t.id !== id));
 }
 
-/** The moment we count down to: the start of the charge day, local time. */
-export function deadlineOf(trial: Pick<Trial, 'chargeDate'>): Date {
+/** The day the first payment is taken, at local midnight. */
+export function chargeDayOf(trial: Pick<Trial, 'chargeDate'>): Date {
   return fromDateKey(trial.chargeDate);
+}
+
+/**
+ * The moment we count down to: the start of the charge day, or a day earlier for App Store
+ * trials, which renew unless cancelled more than 24 hours before the renewal time.
+ */
+export function deadlineOf(trial: Pick<Trial, 'chargeDate' | 'billedByAppStore'>): Date {
+  const chargeDay = chargeDayOf(trial);
+  return trial.billedByAppStore ? addDays(chargeDay, -1) : chargeDay;
 }
 
 /** Active trials whose deadline has not passed, soonest first. */
 export function upcomingTrials(all: Trial[], now: Date = new Date()): Trial[] {
   return all
     .filter((t) => t.status === 'active' && deadlineOf(t) > now)
-    .sort((a, b) => a.chargeDate.localeCompare(b.chargeDate));
+    .sort((a, b) => deadlineOf(a).getTime() - deadlineOf(b).getTime());
 }
 
 /** Active trials whose deadline has passed and that the person has not dealt with yet. */

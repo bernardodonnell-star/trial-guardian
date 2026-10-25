@@ -41,6 +41,16 @@ describe('planReminders', () => {
     expect(plans[0].date.getHours()).toBe(18);
   });
 
+  it('moves everything a day earlier for App Store trials (24-hour rule)', () => {
+    const plans = planReminders({ ...trial, billedByAppStore: true }, defaultSettings, new Date(2026, 9, 25, 8));
+    expect(plans.map((p) => [p.date.getDate(), p.date.getHours()])).toEqual([
+      [28, 9],
+      [30, 9],
+      [30, 18],
+    ]);
+    expect(plans[1].body).toContain("Apple needs 24 hours' notice");
+  });
+
   it('plans nothing for a cancelled trial', () => {
     expect(planReminders({ ...trial, status: 'cancelled' }, defaultSettings, new Date(2026, 9, 25))).toEqual([]);
   });

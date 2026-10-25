@@ -12,7 +12,7 @@ import { deleteTrial, setTrialStatus } from '@/lib/actions';
 import { hasLiveActivity, isInLiveActivityWindow, startLiveActivity } from '@/lib/glance';
 import { planReminders } from '@/lib/reminders';
 import { useSettings } from '@/lib/settings';
-import { formatPrice, useTrial } from '@/lib/trials';
+import { chargeDayOf, formatPrice, useTrial } from '@/lib/trials';
 import { useNow } from '@/hooks/use-now';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -75,7 +75,9 @@ export default function TrialScreen() {
           </ThemedText>
         )}
         <ThemedText themeColor="textSecondary">
-          {price ? `${price} · ` : ''}Charge day {formatDeadline(trial)}
+          {active ? `Cancel before ${formatDeadline(trial)} · ` : ''}
+          {price ? `${price} on ` : 'Charges '}
+          {chargeDayOf(trial).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
         </ThemedText>
       </View>
 

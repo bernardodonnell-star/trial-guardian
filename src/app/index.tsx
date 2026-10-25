@@ -106,7 +106,8 @@ function NextUpCard({ trial, now }: { trial: Trial; now: Date }) {
         </ThemedText>
         <ThemedText style={styles.heroCountdown}>{daysLeftLabel(trial, now)}</ThemedText>
         <ThemedText type="small" style={styles.heroDetail}>
-          {price ? `${price} will be charged on ${formatDeadline(trial)}` : `Charges on ${formatDeadline(trial)}`}
+          {`Cancel before ${formatDeadline(trial)}`}
+          {price ? ` · ${price} after` : ''}
           {finalHours}
         </ThemedText>
       </Pressable>

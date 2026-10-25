@@ -18,6 +18,7 @@ export function parseTrialText(rawText: string, options: ParseOptions): ParsedTr
     billingPeriod: price?.period ?? findPlanPeriod(text),
     chargeDate: findChargeDate(text, options),
     cancelUrl: findCancelUrl(text),
+    billedByAppStore: isAppStoreReceipt(text),
   };
 }
 
@@ -299,6 +300,17 @@ function findService(text: string): string | null {
     if (name) return name;
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// App Store
+
+/** Apple's subscription confirmation emails and App Store screenshots. */
+function isAppStoreReceipt(text: string): boolean {
+  return (
+    /\bApp Store\b|apps\.apple\.com|\bApple Account\b|\bApple ID\b/.test(text) ||
+    (/Subscription Confirmation/i.test(text) && /\bContent Provider\b/i.test(text))
+  );
 }
 
 // ---------------------------------------------------------------------------

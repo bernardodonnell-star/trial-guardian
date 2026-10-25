@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { addDays } from '@/lib/dates';
 import type { Settings } from '@/lib/settings';
-import { deadlineOf, formatPrice, getTrials, updateTrial, type Trial } from '@/lib/trials';
+import { chargeDayOf, deadlineOf, formatPrice, getTrials, updateTrial, type Trial } from '@/lib/trials';
 
 export type PlannedReminder = { date: Date; title: string; body: string };
 
@@ -11,6 +11,7 @@ export type PlannedReminder = { date: Date; title: string; body: string };
 export function planReminders(trial: Trial, settings: Settings, now: Date = new Date()): PlannedReminder[] {
   if (trial.status !== 'active') return [];
   const deadline = deadlineOf(trial);
+  const chargeDay = chargeDayOf(trial);
   const price = formatPrice(trial);
   const charge = price ? `${price} ` : '';
   const plans: PlannedReminder[] = [];
@@ -24,12 +25,14 @@ export function planReminders(trial: Trial, settings: Settings, now: Date = new 
         ? {
             date,
             title: `Last day to cancel ${trial.service}`,
-            body: `Your free trial ends tonight. Cancel today to avoid the ${charge}charge.`,
+            body: trial.billedByAppStore
+              ? `Apple needs 24 hours' notice. Cancel today to avoid the ${charge}charge on ${formatDay(chargeDay)}.`
+              : `Your free trial ends tonight. Cancel today to avoid the ${charge}charge.`,
           }
         : {
             date,
             title: `${trial.service} trial ends in ${daysBefore} days`,
-            body: `You'll be charged ${charge}on ${formatDay(deadline)} unless you cancel.`,
+            body: `You'll be charged ${charge}on ${formatDay(chargeDay)} unless you cancel${trial.billedByAppStore ? ` by ${formatDay(addDays(deadline, -1))}` : ''}.`,
           }
     );
   }
@@ -39,7 +42,7 @@ export function planReminders(trial: Trial, settings: Settings, now: Date = new 
     date.setHours(18, 0, 0, 0);
     plans.push({
       date,
-      title: `${trial.service} charges tomorrow`,
+      title: `Last chance to cancel ${trial.service}`,
       body: `Still want it? If not, cancel tonight. Tap to see the countdown.`,
     });
   }

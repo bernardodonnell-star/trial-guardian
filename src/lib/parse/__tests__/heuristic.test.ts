@@ -23,6 +23,7 @@ Your subscription will automatically renew for £49.99/year starting 1 Nov 2026 
       billingPeriod: 'year',
       chargeDate: '2026-11-01',
       cancelUrl: null,
+      billedByAppStore: true,
     });
   });
 
@@ -39,6 +40,7 @@ Unsubscribe: https://www.disneyplus.com/unsubscribe`;
       billingPeriod: 'month',
       chargeDate: '2026-11-08',
       cancelUrl: 'https://www.disneyplus.com/account/subscription',
+      billedByAppStore: false,
     });
   });
 
@@ -113,6 +115,7 @@ Unsubscribe https://email.peacocktv.com/unsubscribe`;
       billingPeriod: null,
       chargeDate: null,
       cancelUrl: null,
+      billedByAppStore: false,
     });
   });
 });
