@@ -9,7 +9,17 @@ import { daysLeftLabel, formatDeadline, TrialCard } from '@/components/trial-car
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { setTrialStatus } from '@/lib/actions';
 import { describeTimeLeft } from '@/lib/dates';
-import { deadlineOf, formatPrice, overdueTrials, upcomingTrials, useTrials, type Trial } from '@/lib/trials';
+import {
+  deadlineOf,
+  formatMoney,
+  formatPrice,
+  keptSubscriptions,
+  overdueTrials,
+  subscriptionTotals,
+  upcomingTrials,
+  useTrials,
+  type Trial,
+} from '@/lib/trials';
 import { useNow } from '@/hooks/use-now';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -20,10 +30,12 @@ export default function HomeScreen() {
   const now = useNow();
   const upcoming = upcomingTrials(trials, now);
   const overdue = overdueTrials(trials, now);
+  const subscriptions = keptSubscriptions(trials, now);
+  const totals = subscriptionTotals(trials);
   const history = trials
-    .filter((t) => t.status !== 'active')
+    .filter((t) => t.status === 'cancelled')
     .sort((a, b) => b.chargeDate.localeCompare(a.chargeDate));
-  const cancelledCount = history.filter((t) => t.status === 'cancelled').length;
+  const saved = savedByCancelling(history);
   const [next, ...rest] = upcoming;
 
   return (
@@ -68,12 +80,33 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
+        {subscriptions.length > 0 ? (
+          <View style={styles.group}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
+              SUBSCRIPTIONS
+            </ThemedText>
+            {totals.length > 0 ? (
+              <View style={[styles.totals, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                {totals.map((total) => (
+                  <View key={total.currency ?? 'none'} style={styles.totalRow}>
+                    <ThemedText style={styles.totalMonthly}>{`${formatMoney(total.monthly, total.currency)}/month`}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {`${formatMoney(total.yearly, total.currency)} a year`}
+                    </ThemedText>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            {subscriptions.map((trial) => (
+              <TrialCard key={trial.id} trial={trial} now={now} />
+            ))}
+          </View>
+        ) : null}
+
         {history.length > 0 ? (
           <View style={styles.group}>
             <ThemedText type="smallBold" themeColor="textSecondary" style={styles.groupTitle}>
-              {cancelledCount > 0
-                ? `HISTORY · ${cancelledCount} CANCELLED IN TIME`
-                : 'HISTORY'}
+              {`CANCELLED IN TIME · ${history.length}${saved ? ` · ${saved} SAVED` : ''}`}
             </ThemedText>
             {history.map((trial) => (
               <TrialCard key={trial.id} trial={trial} now={now} />
@@ -87,6 +120,14 @@ export default function HomeScreen() {
       </View>
     </View>
   );
+}
+
+/** What the first charges would have cost, in the most common currency (mixed currencies are not added up). */
+function savedByCancelling(cancelled: Trial[]): string | null {
+  const byCurrency = new Map<string | null, number>();
+  for (const t of cancelled) if (t.price !== null) byCurrency.set(t.currency, (byCurrency.get(t.currency) ?? 0) + t.price);
+  const [top] = [...byCurrency.entries()].sort((a, b) => b[1] - a[1]);
+  return top ? formatMoney(top[1], top[0]) : null;
 }
 
 function NextUpCard({ trial, now }: { trial: Trial; now: Date }) {
@@ -169,6 +210,9 @@ const styles = StyleSheet.create({
   heroDetail: { color: '#FFFFFFE6' },
   overdue: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.two },
   overdueTitle: { fontSize: 17, fontWeight: '600' },
+  totals: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.one },
+  totalRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two },
+  totalMonthly: { fontSize: 22, lineHeight: 28, fontWeight: '700' },
   overdueButtons: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.one },
   empty: { alignItems: 'center', gap: Spacing.three, paddingTop: Spacing.five, paddingHorizontal: Spacing.two },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },

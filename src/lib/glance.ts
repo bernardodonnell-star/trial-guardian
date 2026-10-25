@@ -1,6 +1,8 @@
 import Storage from 'expo-sqlite/kv-store';
 import { Platform } from 'react-native';
 
+import { writeShared } from '@/modules/trial-system';
+
 import { addDays, startOfDay } from '@/lib/dates';
 import type { Settings } from '@/lib/settings';
 import { deadlineOf, formatPrice, upcomingTrials, type Trial } from '@/lib/trials';
@@ -41,15 +43,30 @@ function widgetProps(trials: Trial[], now: Date): UpcomingTrialsProps {
   };
 }
 
-/** Pushes the latest trials to the Home Screen and Lock Screen widgets. */
+/**
+ * Pushes the latest trials to the Home Screen and Lock Screen widgets, and to the snapshot
+ * that the Siri and Shortcuts actions read.
+ */
 export function syncWidget(trials: Trial[]) {
   if (Platform.OS !== 'ios') return;
   try {
     const now = new Date();
     const props = widgetProps(trials, now);
     UpcomingTrials.updateTimeline(widgetTimelineDates(trials, now).map((date) => ({ date, props })));
+    writeShared('trialSnapshot', JSON.stringify(props.trials));
   } catch (error) {
     console.warn('Could not update the widget', error);
+  }
+}
+
+/** Ids of trials ticked off with the widget's "I cancelled it" button since the app last wrote the timeline. */
+export async function readWidgetTicks(): Promise<string[]> {
+  if (Platform.OS !== 'ios') return [];
+  try {
+    const entries = await UpcomingTrials.getTimeline();
+    return [...new Set(entries.flatMap((entry) => Object.keys(entry.props?.cancelled ?? {})))];
+  } catch {
+    return [];
   }
 }
 

@@ -1,5 +1,15 @@
-import { HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
-import { containerBackground, font, foregroundStyle, lineLimit, widgetURL } from '@expo/ui/swift-ui/modifiers';
+import { Button, HStack, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import {
+  buttonStyle,
+  containerBackground,
+  controlSize,
+  font,
+  foregroundStyle,
+  labelStyle,
+  lineLimit,
+  tint,
+  widgetURL,
+} from '@expo/ui/swift-ui/modifiers';
 import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
 /**
@@ -15,6 +25,11 @@ export type UpcomingTrialsProps = {
     deadline: number;
     price: string | null;
   }[];
+  /**
+   * Trials ticked off with the widget's button, by id, with the time of the tap. The widget runs
+   * outside the app, so it records the tap here and the app applies it the next time it opens.
+   */
+  cancelled?: Record<string, number>;
 };
 
 function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnvironment) {
@@ -22,7 +37,8 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
   const now = environment.date ?? new Date();
   const dayMs = 24 * 60 * 60 * 1000;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const upcoming = (props.trials ?? []).filter((t) => t.deadline > now.getTime());
+  const ticked = props.cancelled ?? {};
+  const upcoming = (props.trials ?? []).filter((t) => t.deadline > now.getTime() && !ticked[t.id]);
   const next = upcoming[0];
   const family = environment.widgetFamily ?? 'systemSmall';
   const accent = '#FF6B3D';
@@ -37,6 +53,8 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
     return `${days} days left`;
   };
   const background = containerBackground({ type: 'hierarchical', style: 'quinary' }, 'widget');
+  // Returning props from onPress updates this widget entry straight away.
+  const markCancelled = (id: string) => () => ({ cancelled: { ...ticked, [id]: Date.now() } });
 
   if (!next) {
     if (family === 'accessoryInline') return <Text>No trials to cancel</Text>;
@@ -92,9 +110,19 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
         <Text modifiers={[font({ size: 28, weight: 'bold', design: 'rounded' }), lineLimit(1)]}>
           {lastDayLabel(next.deadline)}
         </Text>
-        <Text modifiers={[font({ textStyle: 'caption' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
-          {`Cancel before ${shortDate(next.deadline)}`}
-        </Text>
+        <HStack spacing={4}>
+          <Text modifiers={[font({ textStyle: 'caption' }), foregroundStyle({ type: 'hierarchical', style: 'secondary' }), lineLimit(1)]}>
+            {`By ${shortDate(next.deadline)}`}
+          </Text>
+          <Spacer />
+          <Button
+            target={`cancelled-${next.id}`}
+            onPress={markCancelled(next.id)}
+            label="I cancelled it"
+            systemImage="checkmark.circle.fill"
+            modifiers={[labelStyle('iconOnly'), buttonStyle('plain'), font({ size: 22 }), foregroundStyle(accent)]}
+          />
+        </HStack>
       </VStack>
     );
   }
@@ -125,6 +153,13 @@ function UpcomingTrialsWidget(props: UpcomingTrialsProps, environment: WidgetEnv
             ]}>
             {lastDayLabel(trial.deadline)}
           </Text>
+          <Button
+            target={`cancelled-${trial.id}`}
+            onPress={markCancelled(trial.id)}
+            label={`I cancelled ${trial.service}`}
+            systemImage="checkmark.circle"
+            modifiers={[labelStyle('iconOnly'), buttonStyle('plain'), controlSize('large'), tint(accent), foregroundStyle(accent)]}
+          />
         </HStack>
       ))}
       <Spacer />

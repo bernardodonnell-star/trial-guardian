@@ -1,13 +1,17 @@
 import Constants from 'expo-constants';
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as WebBrowser from 'expo-web-browser';
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { Divider, Section } from '@/components/section';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { replanReminders } from '@/lib/actions';
+import { replanReminders, restoreBackup, syncNow } from '@/lib/actions';
+import { cloudSyncAvailable } from '@/lib/cloud';
+import { exportBackup, exportCsv, pickBackup } from '@/lib/files';
 import { isOnDeviceModelAvailable } from '@/modules/trial-extractor';
 import { updateSettings, useSettings } from '@/lib/settings';
+import { getDeletedIds, useTrials } from '@/lib/trials';
 import { useTheme } from '@/hooks/use-theme';
 
 const REMINDER_DAY_OPTIONS = [7, 3, 2, 1];
@@ -20,11 +24,42 @@ const PRIVACY_URL = 'https://example.com/trial-guardian/privacy';
 export default function SettingsScreen() {
   const theme = useTheme();
   const settings = useSettings();
+  const trials = useTrials();
   const modelReady = isOnDeviceModelAvailable();
+  const cloudReady = cloudSyncAvailable();
 
   async function change(changes: Parameters<typeof updateSettings>[0]) {
     updateSettings(changes);
     await replanReminders();
+  }
+
+  async function toggleLock(value: boolean) {
+    if (value) {
+      const ready = (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+      if (!ready) {
+        Alert.alert('Set up Face ID first', 'Turn on Face ID or a passcode in the Settings app, then try again.');
+        return;
+      }
+      const result = await LocalAuthentication.authenticateAsync({ promptMessage: 'Turn on the lock' });
+      if (!result.success) return;
+    }
+    updateSettings({ appLock: value });
+  }
+
+  async function toggleCloud(value: boolean) {
+    updateSettings({ iCloudSync: value });
+    if (value) await syncNow();
+  }
+
+  async function restore() {
+    try {
+      const backup = await pickBackup();
+      if (!backup) return;
+      const added = await restoreBackup(backup);
+      Alert.alert('Backup restored', added > 0 ? `Added ${added} from the backup.` : 'Everything in the backup was already here.');
+    } catch (error) {
+      Alert.alert('Could not restore', (error as Error).message);
+    }
   }
 
   function toggleDay(day: number) {
@@ -65,10 +100,61 @@ export default function SettingsScreen() {
         />
         <Divider />
         <ToggleRow
+          label="Remind me every day of the final week"
+          detail="For trials you really can’t afford to miss. Stops as soon as you decide."
+          value={settings.persistentReminders}
+          onValueChange={(value) => change({ persistentReminders: value })}
+        />
+        <Divider />
+        <ToggleRow
+          label="Check I wasn’t charged"
+          detail="The day after a cancelled trial would have renewed."
+          value={settings.chargeCheckReminder}
+          onValueChange={(value) => change({ chargeCheckReminder: value })}
+        />
+        <Divider />
+        <ToggleRow
+          label="Before subscriptions renew"
+          detail="3 days before monthly payments, a week before yearly ones."
+          value={settings.renewalReminders}
+          onValueChange={(value) => change({ renewalReminders: value })}
+        />
+        <Divider />
+        <ToggleRow
           label="Lock Screen countdown"
           detail="Starts in the final 8 hours when you open the app or tap a reminder."
           value={settings.autoLiveActivity}
           onValueChange={(value) => change({ autoLiveActivity: value })}
+        />
+      </Section>
+
+      <Section
+        title="Sync and backup"
+        footer={
+          cloudReady
+            ? 'iCloud sync keeps your iPhone and iPad in step through your own iCloud account. We never see it.'
+            : 'Sign in to iCloud in the Settings app to sync between your devices.'
+        }>
+        <ToggleRow
+          label="Sync with iCloud"
+          value={settings.iCloudSync && cloudReady}
+          onValueChange={toggleCloud}
+          disabled={!cloudReady}
+        />
+        <Divider />
+        <LinkRow label="Export as a spreadsheet (CSV)" onPress={() => exportCsv(trials)} />
+        <Divider />
+        <LinkRow label="Back up to a file" onPress={() => exportBackup(trials, getDeletedIds())} />
+        <Divider />
+        <LinkRow label="Restore from a backup" onPress={restore} />
+      </Section>
+
+      <Section title="Security">
+        <ToggleRow
+          label="Require Face ID"
+          detail="Ask for Face ID or your passcode when Trial Guardian opens."
+          value={settings.appLock}
+          onValueChange={toggleLock}
         />
       </Section>
 
@@ -79,8 +165,10 @@ export default function SettingsScreen() {
         </View>
         <Divider />
         <ThemedText type="small" themeColor="textSecondary" style={styles.row}>
-          Trials are stored only on this iPhone. There is no account, no tracking and no access to your email
-          or bank. Delete the app and everything is gone.
+          {settings.iCloudSync
+            ? 'Trials are stored on this iPhone and in your own iCloud account. '
+            : 'Trials are stored only on this iPhone. '}
+          There is no account, no tracking and no access to your email or bank.
         </ThemedText>
       </Section>
 
@@ -122,11 +210,13 @@ function ToggleRow({
   detail,
   value,
   onValueChange,
+  disabled,
 }: {
   label: string;
   detail?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   const theme = useTheme();
   return (
@@ -139,7 +229,7 @@ function ToggleRow({
           </ThemedText>
         ) : null}
       </View>
-      <Switch value={value} onValueChange={onValueChange} trackColor={{ true: theme.accent }} />
+      <Switch value={value} onValueChange={onValueChange} disabled={disabled} trackColor={{ true: theme.accent }} />
     </View>
   );
 }

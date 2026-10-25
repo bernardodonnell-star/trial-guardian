@@ -5,8 +5,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { AppState, useColorScheme } from 'react-native';
 
+import { AppLock } from '@/components/app-lock';
 import { Colors } from '@/constants/theme';
-import { refreshGlances } from '@/lib/actions';
+import { handleReminderAction, refreshGlances, syncNow } from '@/lib/actions';
+import { registerReminderCategories, type ReminderAction } from '@/lib/reminders';
+import { onCloudChange, takeShared } from '@/modules/trial-system';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,10 +25,28 @@ Notifications.setNotificationHandler({
   }),
 });
 
+registerReminderCategories().catch(() => {});
+
+const ACTIONS: ReminderAction[] = ['cancelled', 'keep', 'tonight', 'not-charged', 'charged'];
+
 function useNotificationTaps() {
   useEffect(() => {
-    const open = (response: Notifications.NotificationResponse | null) => {
-      const url = response?.notification.request.content.data?.url;
+    const handled = new Set<string>();
+    const open = async (response: Notifications.NotificationResponse | null) => {
+      if (!response) return;
+      // The same response can arrive twice on a cold start (last response and the listener).
+      const key = `${response.notification.request.identifier}:${response.actionIdentifier}`;
+      if (handled.has(key)) return;
+      handled.add(key);
+
+      const { url, trialId } = response.notification.request.content.data ?? {};
+      const action = ACTIONS.find((a) => a === response.actionIdentifier);
+      if (action && typeof trialId === 'string') {
+        await handleReminderAction(trialId, action);
+        if (action === 'charged') router.push(`/trial/${trialId}?refund=1` as never);
+        else if (action !== 'tonight' && action !== 'not-charged' && typeof url === 'string') router.push(url as never);
+        return;
+      }
       if (typeof url === 'string') router.push(url as never);
     };
     open(Notifications.getLastNotificationResponse());
@@ -34,14 +55,30 @@ function useNotificationTaps() {
   }, []);
 }
 
-/** Keeps the widget and Lock Screen countdown fresh whenever the app comes to the front. */
+/** A screen a Siri or Shortcuts action asked for, such as "Add a trial". */
+function openPendingRoute() {
+  const route = takeShared('pendingRoute');
+  if (route === '/add') router.push('/add');
+}
+
+/**
+ * Keeps the widget, the Lock Screen countdown and iCloud fresh whenever the app comes to the
+ * front, and picks up changes made on the person's other devices.
+ */
 function useForegroundRefresh() {
   useEffect(() => {
     refreshGlances();
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') refreshGlances();
+    openPendingRoute();
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      refreshGlances();
+      openPendingRoute();
     });
-    return () => subscription.remove();
+    const cloud = onCloudChange(() => syncNow());
+    return () => {
+      appState.remove();
+      cloud.remove();
+    };
   }, []);
 }
 
@@ -58,6 +95,7 @@ export default function RootLayout() {
 
   return (
     <ShareIntentProvider options={{ resetOnBackground: true }}>
+      <AppLock>
       <ThemeProvider
         value={{
           ...base,
@@ -72,6 +110,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         </Stack>
       </ThemeProvider>
+      </AppLock>
     </ShareIntentProvider>
   );
 }

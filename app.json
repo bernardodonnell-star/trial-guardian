@@ -59,7 +59,10 @@
             "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
             "NSExtensionActivationSupportsImageWithMaxCount": 1
           },
-          "androidIntentFilters": ["text/*", "image/*"]
+          "androidIntentFilters": [
+            "text/*",
+            "image/*"
+          ]
         }
       ],
       [
@@ -94,7 +97,24 @@
       ],
       "expo-sqlite",
       "expo-localization",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Trial Guardian adds a reminder event for the day you need to cancel a trial.",
+          "writeOnlyAccess": true,
+          "writeOnlyCalendarPermission": "Trial Guardian adds a reminder event for the day you need to cancel a trial.",
+          "remindersPermission": false
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Trial Guardian uses Face ID to keep your trials and subscriptions private."
+        }
+      ],
+      "./plugins/with-trial-system.js"
     ],
     "experiments": {
       "typedRoutes": true,

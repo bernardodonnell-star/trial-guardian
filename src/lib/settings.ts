@@ -10,6 +10,16 @@ export type Settings = {
   lastEveningReminder: boolean;
   /** Start a Lock Screen countdown automatically during the final hours. */
   autoLiveActivity: boolean;
+  /** Remind every morning of the final week until the person decides. */
+  persistentReminders: boolean;
+  /** The day after a cancelled trial's charge day, remind to check no charge went through. */
+  chargeCheckReminder: boolean;
+  /** Remind before each renewal of a kept subscription. */
+  renewalReminders: boolean;
+  /** Ask for Face ID (or the passcode) when the app opens. */
+  appLock: boolean;
+  /** Keep trials in step across the person's devices through iCloud. */
+  iCloudSync: boolean;
 };
 
 export const defaultSettings: Settings = {
@@ -17,6 +27,11 @@ export const defaultSettings: Settings = {
   reminderHour: 9,
   lastEveningReminder: true,
   autoLiveActivity: true,
+  persistentReminders: false,
+  chargeCheckReminder: true,
+  renewalReminders: true,
+  appLock: false,
+  iCloudSync: false,
 };
 
 const STORAGE_KEY = 'settings.v1';

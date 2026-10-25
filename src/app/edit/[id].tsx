@@ -20,6 +20,8 @@ export default function EditTrialScreen() {
     <View style={{ flex: 1, backgroundColor: theme.background }}>
       <TrialForm
         initial={trial}
+        trialId={trial.id}
+        priceHistory={trial.priceHistory}
         source={trial.source}
         submitLabel="Save changes"
         onSubmit={async ({ source: _source, ...changes }) => {

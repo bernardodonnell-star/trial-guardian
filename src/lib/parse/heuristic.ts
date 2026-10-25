@@ -327,3 +327,16 @@ function findCancelUrl(text: string): string | null {
     null
   );
 }
+
+// ---------------------------------------------------------------------------
+// Building blocks for other readers (such as the Subscriptions screen reader)
+
+/** The first date written in a short piece of text, as `YYYY-MM-DD`. */
+export function firstDateIn(text: string, options: ParseOptions): string | null {
+  return findDates(normalize(text), options)[0]?.key ?? null;
+}
+
+/** The likeliest price in a short piece of text. */
+export function priceIn(text: string, options: ParseOptions) {
+  return findPrice(normalize(text), options);
+}
