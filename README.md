@@ -1,56 +1,39 @@
-# Welcome to your Expo app 👋
+# Attaché
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A trip-aware readiness and safety companion for professional travellers. One Expo app for iPhone and Android, with a Supabase backend in the EU.
 
-## Get started
+This is **stage 1**: the app shell and core screens run on sample data (Frankfurt → Geneva → Dubai → Sydney), the alert-labelling rules are implemented and tested, and the server has its database schema, a feed scanner and an assistant function.
 
-1. Install dependencies
+## What is here
 
-   ```bash
-   npm install
-   ```
+| Path | What it is |
+|---|---|
+| `src/app/` | Screens (Expo Router): Today, Trip (expandable bookings with references and call buttons), Alerts, Ask, Help |
+| `src/lib/confirmation.ts` | How an alert is labelled. Confirmed only on an official source; news-only reports are Unconfirmed, "accuracy not yet known", with each independent outlet listed; syndicated copies count once; social media never counts |
+| `src/lib/sources.ts` | Source tiers: 1 official, 2 data services, 3 news allow-list, 0 excluded |
+| `src/lib/weather.ts` | Daily forecast for each city during the stay (MET Norway), with plain-language notes; typical weather when the stay is beyond the 9-day range |
+| `src/lib/allowance.ts` | Assistant message allowance (150 a month, 500 Super-user, €4.99 top-up of 200) |
+| `src/data/sample-trip.ts` | Sample itinerary and alerts |
+| `supabase/migrations/` | Database schema with row-level security |
+| `supabase/functions/scanner` | Polls official, data and news feeds every 15 minutes |
+| `supabase/functions/ask` | The assistant, with the allowance enforced on the server |
+| `docs/CONNECTIONS.md` | Accounts and API keys to set up, in order |
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Run it
 
 ```bash
-npm run reset-project
+npm install
+npx expo start        # then press i (iOS simulator), a (Android) or w (web)
+npm test              # rule tests
+npm run typecheck
+npx expo lint
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Next stages
 
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Connect Supabase sign-in and replace sample data with the user's trips.
+2. Booking import: forwarding address, share sheet and scan.
+3. Scanner stage 2: match reports to trips, triage, draft alerts, checker model, push notifications.
+4. Brief, health and yellow fever, area ratings, arrival guides and route checks.
+5. Offline pack, step-by-step guides, circle.
+6. Subscriptions with RevenueCat, then TestFlight and Play internal testing.

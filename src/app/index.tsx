@@ -1,98 +1,55 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AlertCard } from '@/components/alert-card';
+import { WeatherCard } from '@/components/weather-card';
+import { Badge, Body, Button, Card, Heading, Label, Row, Screen, Small } from '@/components/ui';
+import { sampleAlerts, sampleTrip } from '@/data/sample-trip';
+import { localDay, localTime } from '@/lib/format';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+const departure = '2026-11-25T17:40:00+01:00'; // SAMPLE: next journey
+
+export default function TodayScreen() {
+  const trip = sampleTrip;
+  const first = trip.stops[0];
+  const last = trip.stops[trip.stops.length - 1];
+  const needsCheck = trip.stops.flatMap((s) => s.bookings.filter((b) => b.needsCheck?.length));
+  const top = sampleAlerts.find((a) => a.severity === 'warning' || a.severity === 'critical');
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <Screen title={trip.title} subtitle={`${localDay(first.arrive)} to ${localDay(last.depart)} · ${trip.stops.length} stops · Irish passport`}>
+      <Card tone="ok">
+        <Row>
+          <Heading>Next: Frankfurt to Geneva</Heading>
+          <Badge tone="ok">On track</Badge>
+        </Row>
+        <Body>
+          LX 1073 leaves Terminal 1 on {localDay(departure)} at {localTime(departure)}. Leave the hotel by 14:45.
+        </Body>
+        <Button title="Open the trip" onPress={() => router.navigate('/trip')} />
+      </Card>
+
+      {top ? <AlertCard alert={top} /> : null}
+
+      <WeatherCard stop={trip.stops[1]} sample compact />
+
+      {needsCheck.length ? (
+        <Card tone="warning">
+          <Label>Needs a check</Label>
+          {needsCheck.map((b) => (
+            <Body key={b.id}>
+              {b.title}: {b.needsCheck!.join('; ')}
+            </Body>
+          ))}
+        </Card>
+      ) : null}
+
+      <Card>
+        <Label>Before you go</Label>
+        <Body>Australia: eVisitor visa approved for your Irish passport.</Body>
+        <Body>Dubai transit: no visa needed, same terminal.</Body>
+        <Body>Offline pack downloads by itself 48 hours before each flight.</Body>
+        <Small>Sample data. Readiness checks connect to the checked database in the next stage.</Small>
+      </Card>
+    </Screen>
   );
 }
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
