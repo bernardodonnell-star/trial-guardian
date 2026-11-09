@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Body, CallButton, Card, Heading, Label, Row, Screen, Small } from '@/components/ui';
+import { WeatherCard } from '@/components/weather-card';
 import { sampleTrip } from '@/data/sample-trip';
 import { localDateTime, localDay } from '@/lib/format';
 import type { Booking } from '@/lib/types';
@@ -24,6 +25,7 @@ export default function TripScreen() {
           <Label>
             {stop.city} · {localDay(stop.arrive)} to {localDay(stop.depart)}
           </Label>
+          <WeatherCard stop={stop} sample />
           {stop.bookings.map((b) => (
             <BookingCard key={b.id} booking={b} />
           ))}

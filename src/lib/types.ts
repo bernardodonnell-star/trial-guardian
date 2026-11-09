@@ -32,6 +32,8 @@ export interface Stop {
   arrive: Iso;
   depart: Iso;
   timeZone: string; // IANA, e.g. Europe/Zurich
+  lat?: number;
+  lon?: number;
   bookings: Booking[];
 }
 

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 
 import { AlertCard } from '@/components/alert-card';
+import { WeatherCard } from '@/components/weather-card';
 import { Badge, Body, Button, Card, Heading, Label, Row, Screen, Small } from '@/components/ui';
 import { sampleAlerts, sampleTrip } from '@/data/sample-trip';
 import { localDay, localTime } from '@/lib/format';
@@ -28,6 +29,8 @@ export default function TodayScreen() {
       </Card>
 
       {top ? <AlertCard alert={top} /> : null}
+
+      <WeatherCard stop={trip.stops[1]} sample compact />
 
       {needsCheck.length ? (
         <Card tone="warning">

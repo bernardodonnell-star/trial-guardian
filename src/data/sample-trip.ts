@@ -17,6 +17,8 @@ export const sampleTrip: Trip = {
       arrive: '2026-11-23T10:05:00+01:00',
       depart: '2026-11-25T17:40:00+01:00',
       timeZone: 'Europe/Berlin',
+      lat: 50.11,
+      lon: 8.68,
       bookings: [
         {
           id: 'b-mainblick',
@@ -41,6 +43,8 @@ export const sampleTrip: Trip = {
       arrive: '2026-11-25T18:55:00+01:00',
       depart: '2026-11-27T14:30:00+01:00',
       timeZone: 'Europe/Zurich',
+      lat: 46.21,
+      lon: 6.14,
       bookings: [
         {
           id: 'b-lx1073',
@@ -85,6 +89,8 @@ export const sampleTrip: Trip = {
       arrive: '2026-11-28T23:10:00+11:00',
       depart: '2026-12-12T21:00:00+11:00',
       timeZone: 'Australia/Sydney',
+      lat: -33.85,
+      lon: 151.21,
       bookings: [
         {
           id: 'b-ek84',

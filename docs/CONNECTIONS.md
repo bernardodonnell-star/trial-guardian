@@ -37,6 +37,8 @@ With these four, the app runs on sample data and the scanner starts collecting o
 
 Most official sources need **no account**: FCDO, US State Department, Smartraveller, DFA Ireland, Travel.gc.ca, France Diplomatie, WHO, ECDC, CDC, USGS and GDACS publish open feeds. They are listed in `supabase/seed.sql`.
 
+**Weather** comes from MET Norway (api.met.no): free, global, about 9 days ahead, commercial use allowed. No account or key is needed, but MET Norway requires a real contact email in each request and asks larger apps to cache forecasts on their own server. Before release, replace `support@attache.example` in `src/hooks/use-stop-weather.ts` with a real support address, and move the call behind a Supabase cache. Typical weather beyond the forecast range needs a climate-normals table; its source should be chosen after a licence check (several free sources are non-commercial only).
+
 These need an agreement or a paid licence, and can wait until after the pilot:
 
 | Source | What it adds | Notes |

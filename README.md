@@ -11,6 +11,7 @@ This is **stage 1**: the app shell and core screens run on sample data (Frankfur
 | `src/app/` | Screens (Expo Router): Today, Trip (expandable bookings with references and call buttons), Alerts, Ask, Help |
 | `src/lib/confirmation.ts` | How an alert is labelled. Confirmed only on an official source; news-only reports are Unconfirmed, "accuracy not yet known", with each independent outlet listed; syndicated copies count once; social media never counts |
 | `src/lib/sources.ts` | Source tiers: 1 official, 2 data services, 3 news allow-list, 0 excluded |
+| `src/lib/weather.ts` | Daily forecast for each city during the stay (MET Norway), with plain-language notes; typical weather when the stay is beyond the 9-day range |
 | `src/lib/allowance.ts` | Assistant message allowance (150 a month, 500 Super-user, €4.99 top-up of 200) |
 | `src/data/sample-trip.ts` | Sample itinerary and alerts |
 | `supabase/migrations/` | Database schema with row-level security |
